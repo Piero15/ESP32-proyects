@@ -158,8 +158,8 @@ void setup(){
     else {
         display.clear();
         display.setFont(ArialMT_Plain_16);
-        display.drawString(45, 0, "WiFi");
-        display.drawString(23, 15, "Conectado");
+        display.drawString(46, 0, "WiFi");
+        display.drawString(24, 15, "Conectado");
         display.display();
         Serial.println("conectado! :D");
         delay(2000);
