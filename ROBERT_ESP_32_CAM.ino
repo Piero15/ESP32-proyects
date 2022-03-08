@@ -58,7 +58,22 @@ void initServo(){
 SSD1306Wire display(0x3c, 1, 3, GEOMETRY_128_32);
 
 #define pulsador 16
-bool wifi = false;
+
+//temperatura interna
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint8_t temprature_sens_read();
+#ifdef __cplusplus
+}
+#endif
+uint8_t temprature_sens_read();
+
+//mini menu pulsador
+bool Pmenu = true;
+
+//modo inicio
+bool wifi=true;
 
 void setup(){
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // prevent brownouts by silencing them
@@ -122,15 +137,15 @@ void setup(){
   ledcAttachPin(4, 7);  //pin4 is LED
 
   //iniciacion de Oled
-  delay(850);
+  delay(1000);
   display.init();
 
   display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
+  //display.setFont(ArialMT_Plain_10);
   display.clear();
   
   display.setFont(ArialMT_Plain_16);
-  display.drawString(0, 0, "Robert32CAM");
+  display.drawString(0, 0, ssid);
   display.drawString(0, 15, "IP:192.168.4.1");
   display.display();
 
@@ -144,7 +159,7 @@ void setup(){
     bool res;
     // res = wm.autoConnect(); // auto generated AP name from chipid
     // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
-    res = wm.autoConnect("Robert32CAM"); // password protected ap
+    res = wm.autoConnect(ssid); // password protected ap
   
     if(!res) {
         display.clear();
@@ -177,6 +192,7 @@ void setup(){
   if(digitalRead(pulsador) == LOW){   //AccesPoint Crea una red wifi llamada RobertCam32
     WiFi.softAP(ssid);
     IPAddress miIP = WiFi.softAPIP();
+    wifi = false;
     delay(3000);
     for (int i = 0; i < 3; i++) {
       ledcWrite(7, 10); // flash led
@@ -222,25 +238,41 @@ void loop() {
   // put your main code here, to run repeatedly:
   
   if(digitalRead(pulsador) == LOW){
-    display.clear();
-    display.display();
+    Pmenu = !Pmenu;
     delay(500);
+  }
+
+  //Pmenu
+  if(Pmenu == true){
+    if(wifi==true){
+      drawIP(WiFi.localIP().toString());
+    }
+    else{
+      display.clear();
+      display.setFont(ArialMT_Plain_16);
+      display.drawString(0, 0, ssid);
+      display.drawString(0, 15, "IP:192.168.4.1");
+      display.display();
+    }
+  }
+  if(Pmenu == false){
+    int tempInt = (temprature_sens_read() - 32) / 1.8;
+    String myStr = String(tempInt);
+    display.clear();
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(0, 0, myStr + "C°");
+    display.display();
+    delay(50);
   }
   ArduinoOTA.handle();
   Serial.printf("RSSi: %ld dBm\n", WiFi.RSSI());
 }
 
+
 void drawIP(String MyIP) {
-  
-  // Falls eine Anzeige auf dem Display bereits angezeigt wurde muss 
-  // das Display explizit geloescht werden.
   display.clear();
-  // Die Position des Textes auf dem Display wird hier festgelegt.
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  // Die Schriftart und die Groesse wird hier definiert.
   display.setFont(ArialMT_Plain_16);
-  // Der Inhalt also hier die IP-Adresse wird an die Anzeige uebergeben.
-  display.drawString(0, 10, String(MyIP));
-  // Jetzt wird alles aus dem Buffer auf das Display geschrieben.
+  display.drawString(0, 0, "Conect IP:");
+  display.drawString(0, 15, String(MyIP));
   display.display();
 }
